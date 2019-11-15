@@ -1,0 +1,4 @@
+git+git://github.com/avwx-rest/avwx-api-core.git@a1406073c044e1e2d799a9d67b07edc753b7d21d#egg=avwx_api_core
+
+quart~=0.9
+quart-openapi>=1.4
