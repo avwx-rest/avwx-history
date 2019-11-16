@@ -6,7 +6,17 @@ API parameter validators
 from datetime import date, datetime, timezone
 
 # library
-from voluptuous import Schema, In, Invalid, Length, Required, REMOVE_EXTRA
+from voluptuous import (
+    All,
+    Schema,
+    Coerce,
+    In,
+    Invalid,
+    Length,
+    Range,
+    Required,
+    REMOVE_EXTRA,
+)
 
 REPORT_TYPES = ("metar", "taf")
 
@@ -36,14 +46,16 @@ def Station(value: str) -> str:
 date_params = Schema(
     {
         Required("date", default=""): Date,
-        "station": Station,
-        "report_type": In(REPORT_TYPES),
+        Required("station"): Station,
+        Required("report_type"): In(REPORT_TYPES),
+        "recent": All(Coerce(int), Range(min=1, max=48)),
     },
     extra=REMOVE_EXTRA,
 )
 
 HELP = {
     "date": "Date string formatted as YYYY-MM-DD",
+    "recent": "Returns most recent reports from a date (max 48)",
     "report_type": "Weather report type (metar, taf)",
     "station": "ICAO station ID. Ex: KJFK",
 }

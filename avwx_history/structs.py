@@ -12,3 +12,4 @@ class DateParams:
     date: date
     report_type: str
     station: str
+    recent: int = None

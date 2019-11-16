@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from functools import wraps
 
 # library
-from quart import request, Response
+from quart import redirect, request, Response
 from quart_openapi.cors import crossdomain
 from voluptuous import Invalid, MultipleInvalid
 
@@ -71,8 +71,16 @@ class HistView(AuthView):
         """
         GET handler returning reports
         """
-        data = await app.history.by_date(
-            params.report_type, params.station, params.date
-        )
-        data = {"meta": datetime.now(tz=timezone.utc), "results": data or []}
+        data = {
+            "meta": datetime.now(tz=timezone.utc),
+            "results": await app.history.from_params(params),
+        }
         return self.make_response(data)
+
+
+@app.route("/")
+def home():
+    """
+    Redirect to AVWX home
+    """
+    return redirect("https://avwx.rest")
