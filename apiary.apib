@@ -1,80 +1,214 @@
 FORMAT: 1A
-HOST: http://polls.apiblueprint.org/
+HOST: https://history.avwx.rest/api
 
 # AVWX History
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+The AVWX History API provides searchable access to past reports served by the main AVWX API.
 
-## Questions Collection [/questions]
+## Authentication
 
-### List All Questions [GET]
+AVWX uses bearer tokens for user authentication. Create an account at [account.avwx.rest](https://account.avwx.rest) to generate your token and include it in your requests.
+
+The API looks for tokens in two places:
+
+- `"Authorization"` header. The token value can have any prefix (`"TOKEN abcde"`, `"BEARER abcde"`, etc) or just the token value itself
+- `"?token=abcde"` URL parameter
+
+The header value will supercede the URL parameter if both are found. All examples in the documentation use the header method.
+
+All endpoints in the AVWX History API require an Enterprise level plan to access.
+
+## Caveats
+
+Reports are added to the history cache when they are called from the API. This approach has some consequences:
+
+- The history cache retains a copy of every report served by the main AVWX API
+- We cannot guarentee that the history is complete for the requested station
+- Station popularity is directly proportional to a complete report history
+
+The report cache only goes back to early November 2019. If there is interest in backfilling the historic record or divesting the report population from the main API, I may do so.
+
+
+## History [/{report_type}/{ident}{?recent,date,format}]
+
+Returns historic reports from a specific station. Currently supports METAR and TAF.
+
+- Calls with `recent` but not `date` return the most recent n number of reports up to a max of 48 in one call
+- Calls with `date` but not `recent` return all reports from that date
+- Calls with both `recent` and `date` return the most recent n number of reports no earlier than the given date
+
++ Parameters
+    + report_type - Weather report type (metar, taf)
+    + ident (string) - ICAO station ident
+    + date (string) - ISO date yyyy-mm-dd
+    + recent (int) - Number of recent reports up to 48. Will return all reports on a date if not provided
+    + format (string) - Desired response format (default=json, xml, yaml)
+
+### Get Reports by Station [GET]
+
+This example shows the two most recent METAR reports for JKF International in New York City.
+
++ Parameters
+
+    + report_type:`metar`
+    + ident:`KJFK`
+    + recent:2
+
++ Request
+
+    + Headers
+    
+            Authorization: Token my_secret_api_token
 
 + Response 200 (application/json)
 
-        [
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
-            }
-        ]
-
-### Create a New Question [POST]
-
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
-
-+ Request (application/json)
-
         {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
+            "meta": "2019-12-02T06:08:47.779080+00:00Z",
+            "results": [
+                {
+                    "altimeter": {
+                        "repr": "2946",
+                        "value": 29.46,
+                        "spoken": "two nine point four six"
+                    },
+                    "clouds": [
+                        {
+                            "repr": "OVC010",
+                            "type": "OVC",
+                            "altitude": 10,
+                            "modifier": null,
+                            "direction": null
+                        }
+                    ],
+                    "flight_rules": "MVFR",
+                    "other": [
+                        "-RA",
+                        "BR"
+                    ],
+                    "sanitized": "KJFK 020551Z 04019G27KT 6SM -RA BR OVC010 04/04 A2946 RMK AO2 PK WND 04032/0512 RAE32B38 SLP977 931000 P0001 60010 T00390039 10050 20039 58006 $",
+                    "visibility": {
+                        "repr": "6",
+                        "value": 6,
+                        "spoken": "six"
+                    },
+                    "wind_direction": {
+                        "repr": "040",
+                        "value": 40,
+                        "spoken": "zero four zero"
+                    },
+                    "wind_gust": {
+                        "repr": "27",
+                        "value": 27,
+                        "spoken": "two seven"
+                    },
+                    "wind_speed": {
+                        "repr": "19",
+                        "value": 19,
+                        "spoken": "one nine"
+                    },
+                    "raw": "KJFK 020551Z 04019G27KT 6SM -RA BR OVC010 04/04 A2946 RMK AO2 PK WND 04032/0512 RAE32B38 SLP977 931000 P0001 60010 T00390039 10050 20039 58006 $",
+                    "station": "KJFK",
+                    "time": {
+                        "repr": "020551Z",
+                        "dt": "2019-12-02T05:51:00Z"
+                    },
+                    "remarks": "RMK AO2 PK WND 04032/0512 RAE32B38 SLP977 931000 P0001 60010 T00390039 10050 20039 58006 $",
+                    "dewpoint": {
+                        "repr": "04",
+                        "value": 4,
+                        "spoken": "four"
+                    },
+                    "remarks_info": {
+                        "dewpoint_decimal": {
+                            "repr": "3.9",
+                            "value": 3.9,
+                            "spoken": "three point nine"
+                        },
+                        "temperature_decimal": {
+                            "repr": "3.9",
+                            "value": 3.9,
+                            "spoken": "three point nine"
+                        }
+                    },
+                    "runway_visibility": [],
+                    "temperature": {
+                        "repr": "04",
+                        "value": 4,
+                        "spoken": "four"
+                    },
+                    "wind_variable_direction": []
+                },
+                {
+                    "altimeter": {
+                        "repr": "2947",
+                        "value": 29.47,
+                        "spoken": "two nine point four seven"
+                    },
+                    "clouds": [
+                        {
+                            "repr": "OVC010",
+                            "type": "OVC",
+                            "altitude": 10,
+                            "modifier": null,
+                            "direction": null
+                        }
+                    ],
+                    "flight_rules": "MVFR",
+                    "other": [
+                        "BR"
+                    ],
+                    "sanitized": "KJFK 020532Z 04022G32KT 6SM BR OVC010 04/04 A2947 RMK AO2 PK WND 04032/0512 RAE32 P0000 T00440039 $",
+                    "visibility": {
+                        "repr": "6",
+                        "value": 6,
+                        "spoken": "six"
+                    },
+                    "wind_direction": {
+                        "repr": "040",
+                        "value": 40,
+                        "spoken": "zero four zero"
+                    },
+                    "wind_gust": {
+                        "repr": "32",
+                        "value": 32,
+                        "spoken": "three two"
+                    },
+                    "wind_speed": {
+                        "repr": "22",
+                        "value": 22,
+                        "spoken": "two two"
+                    },
+                    "raw": "KJFK 020532Z 04022G32KT 6SM BR OVC010 04/04 A2947 RMK AO2 PK WND 04032/0512 RAE32 P0000 T00440039 $",
+                    "station": "KJFK",
+                    "time": {
+                        "repr": "020532Z",
+                        "dt": "2019-12-02T05:32:00Z"
+                    },
+                    "remarks": "RMK AO2 PK WND 04032/0512 RAE32 P0000 T00440039 $",
+                    "dewpoint": {
+                        "repr": "04",
+                        "value": 4,
+                        "spoken": "four"
+                    },
+                    "remarks_info": {
+                        "dewpoint_decimal": {
+                            "repr": "3.9",
+                            "value": 3.9,
+                            "spoken": "three point nine"
+                        },
+                        "temperature_decimal": {
+                            "repr": "4.4",
+                            "value": 4.4,
+                            "spoken": "four point four"
+                        }
+                    },
+                    "runway_visibility": [],
+                    "temperature": {
+                        "repr": "04",
+                        "value": 4,
+                        "spoken": "four"
+                    },
+                    "wind_variable_direction": []
+                }
             ]
         }
-
-+ Response 201 (application/json)
-
-    + Headers
-
-            Location: /questions/2
-
-    + Body
-
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
-                    }
-                ]
-            }
