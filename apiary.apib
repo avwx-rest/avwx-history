@@ -38,21 +38,18 @@ Returns historic reports from a specific station. Currently supports METAR and T
 - Calls with both `recent` and `date` return the most recent n number of reports no earlier than the given date
 
 + Parameters
-    + report_type - Weather report type (metar, taf)
-    + ident (string) - ICAO station ident
-    + date (string) - ISO date yyyy-mm-dd
-    + recent (int) - Number of recent reports up to 48. Will return all reports on a date if not provided
-    + format (string) - Desired response format (default=json, xml, yaml)
+    + report_type: `metar` (string) - Weather report type
+        + supported: metar, taf
+    + ident: `KJFK` (string) - ICAO station ident
+    + date: `2020-01-01` (optional) - ISO date yyyy-mm-dd
+    + recent: 2 (number, optional) - Number of recent reports up to 48. Will return all reports on a date if not provided
+    + format (optional) - Desired response format
+        + supported: json, xml, yaml
+        + Default: `json`
 
 ### Get Reports by Station [GET]
 
 This example shows the two most recent METAR reports for JKF International in New York City.
-
-+ Parameters
-
-    + report_type:`metar`
-    + ident:`KJFK`
-    + recent:2
 
 + Request
 
