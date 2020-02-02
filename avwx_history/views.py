@@ -59,7 +59,6 @@ class HistView(AuthView):
         try:
             params = {**request.args, **kwargs}
             return structs.DateParams(**validate.date_params(params))
-            # return self.struct(**self.validator(params))
         except (Invalid, MultipleInvalid) as exc:
             key = exc.path[0]
             return {"error": str(exc.msg), "param": key, "help": validate.HELP.get(key)}
