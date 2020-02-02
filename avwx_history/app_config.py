@@ -11,7 +11,7 @@ from avwx_api_core.cache import CacheManager
 from avwx_api_core.token import TokenManager
 from avwx_history.history import HistoryFetch
 
-app = create_app(__name__, environ.get("PSQL_URI"), environ.get("MONGO_URI"))
+app = create_app(__name__, environ.get("MONGO_URI"))
 
 
 @app.before_serving
