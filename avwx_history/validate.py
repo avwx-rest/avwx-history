@@ -18,6 +18,9 @@ from voluptuous import (
     REMOVE_EXTRA,
 )
 
+# module
+import avwx
+
 REPORT_TYPES = ("metar", "taf")
 
 
@@ -35,11 +38,13 @@ def Date(value: str) -> date:
 
 def Station(value: str) -> str:
     """
-    Performs a crude validation of a station ICAO
+    Validation a station ICAO
     """
     try:
-        return Length(min=4, max=4)(value.upper())
-    except (AttributeError, Invalid):
+        icao = Length(min=4, max=4)(value.upper())
+        avwx.Station.from_icao(icao)
+        return icao
+    except (AttributeError, avwx.exceptions.BadStation, Invalid):
         raise Invalid(f"{value} is not a valid station ICAO")
 
 

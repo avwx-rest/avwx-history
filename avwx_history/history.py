@@ -3,10 +3,18 @@ History fetch manager
 """
 
 # stdlib
-from datetime import timedelta
+from dataclasses import asdict
+from datetime import datetime, timedelta
 
 # module
+import avwx
 from avwx_api_core.util.handler import mongo_handler
+
+
+PARSER = {
+    "metar": avwx.Metar,
+    "taf": avwx.Taf,
+}
 
 
 class HistoryFetch:
@@ -17,27 +25,24 @@ class HistoryFetch:
     def __init__(self, app: "Quart"):
         self._app = app
 
-    async def by_date(self, report_type: str, icao: str, date: "date") -> [dict]:
+    async def by_date(self, report_type: str, icao: str, date: "date") -> [str]:
         """
         Fetch station reports by date
         """
-        key = f"{date.year}.{date.month}.{date.day}"
-        op = self._app.mdb.history[report_type].find_one(
-            {"_id": icao}, {"_id": 0, key: 1}
+        date = datetime(date.year, date.month, date.day)
+        fetch = self._app.mdb.history[report_type].find_one(
+            {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
         )
-        data = await mongo_handler(op)
-        try:
-            for sub in key.split("."):
-                data = data[sub]
-        except (KeyError, TypeError):
-            return
-        if not data:
-            return
-        return [i[1] for i in sorted(data.items(), key=lambda x: x[0], reverse=True)]
+        data = await mongo_handler(fetch)
+        if not data or "raw" not in data:
+            return []
+        return [
+            i[1] for i in sorted(data["raw"].items(), key=lambda x: x[0], reverse=True)
+        ]
 
     async def recent(
         self, report_type: str, icao: str, date: "date", count: int
-    ) -> [dict]:
+    ) -> [str]:
         """
         Fetch most recent n reports from a date
         """
@@ -65,4 +70,5 @@ class HistoryFetch:
             data = await self.recent(**kwargs, count=params.recent)
         else:
             data = await self.by_date(**kwargs)
-        return data or []
+        parser = PARSER[params.report_type]
+        return [asdict(parser.from_report(report).data) for report in data]

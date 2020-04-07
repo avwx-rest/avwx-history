@@ -52,7 +52,8 @@ class HistView(AuthView):
         self._key_repl = _key_repl
         self._key_remv = _key_remv
 
-    def validate_params(self, **kwargs):
+    @staticmethod
+    def validate_params(**kwargs):
         """
         Returns all validated request parameters or an error response dict
         """
@@ -70,9 +71,10 @@ class HistView(AuthView):
         """
         GET handler returning reports
         """
+        reports = await app.history.from_params(params)
         data = {
             "meta": datetime.now(tz=timezone.utc),
-            "results": await app.history.from_params(params),
+            "results": reports,
         }
         return self.make_response(data)
 

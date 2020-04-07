@@ -15,7 +15,7 @@ app = create_app(__name__, environ.get("MONGO_URI"))
 
 
 @app.before_serving
-def init_helpers():
+async def init_helpers():
     """
     Init API helpers
     """
