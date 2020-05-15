@@ -3,7 +3,7 @@ HOST: https://history.avwx.rest/api
 
 # AVWX History
 
-The AVWX History API provides searchable access to past reports served by the main AVWX API.
+The AVWX History API provides searchable access to past reports.
 
 ## Authentication
 
@@ -18,15 +18,11 @@ The header value will supercede the URL parameter if both are found. All example
 
 All endpoints in the AVWX History API require an Enterprise level plan to access.
 
-## Caveats
+## Report History
 
-Reports are added to the history cache when they are called from the API. This approach has some consequences:
+The METAR report cache goes back to **January 1st, 2016** while other report types have not yet been backfilled. If there is interest in backfilling the historic record for TAF and other report types, let me know.
 
-- The history cache retains a copy of every report served by the main AVWX API
-- We cannot guarentee that the history is complete for the requested station
-- Station popularity is directly proportional to a complete report history
-
-The report cache only goes back to early November 2019. If there is interest in backfilling the historic record or divesting the report population from the main API, I may do so.
+Reports are added by the main API whenever a new report is requested. A backfill script is run every few days to maintain a complete record. This means that recent days may not have a complete history depending on overall popularity.
 
 
 ## History [/{report_type}/{ident}{?recent,date,format}]
@@ -35,7 +31,7 @@ Returns historic reports from a specific station. Currently supports METAR and T
 
 - Calls with `recent` but not `date` return the most recent n number of reports up to a max of 48 in one call
 - Calls with `date` but not `recent` return all reports from that date
-- Calls with both `recent` and `date` return the most recent n number of reports no earlier than the given date
+- Calls with both `recent` and `date` return the most recent n number of reports no more recent than the given date
 
 + Parameters
     + report_type: `metar` (string) - Weather report type
