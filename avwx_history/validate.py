@@ -8,6 +8,7 @@ from datetime import date, datetime, timezone
 # library
 from voluptuous import (
     All,
+    Boolean,
     Schema,
     Coerce,
     In,
@@ -53,6 +54,9 @@ date_params = Schema(
         Required("date", default=""): Date,
         Required("station"): Station,
         Required("report_type"): In(REPORT_TYPES),
+        Required(
+            "parse", default=True
+        ): Boolean(),  # pylint: disable=no-value-for-parameter
         "recent": All(Coerce(int), Range(min=1, max=48)),
     },
     extra=REMOVE_EXTRA,
@@ -60,6 +64,7 @@ date_params = Schema(
 
 HELP = {
     "date": "Date string formatted as YYYY-MM-DD",
+    "parse": "Boolean to parse reports",
     "recent": "Returns most recent reports from a date (max 48)",
     "report_type": "Weather report type (metar, taf)",
     "station": "ICAO station ID. Ex: KJFK",

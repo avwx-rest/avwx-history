@@ -3,8 +3,8 @@ History fetch manager
 """
 
 # stdlib
+import datetime as dt
 from dataclasses import asdict
-from datetime import datetime, timedelta
 
 # module
 import avwx
@@ -25,34 +25,38 @@ class HistoryFetch:
     def __init__(self, app: "Quart"):
         self._app = app
 
-    async def by_date(self, report_type: str, icao: str, date: "date") -> [str]:
+    async def by_date(
+        self, report_type: str, icao: str, date: "date"
+    ) -> [(str, dt.date)]:
         """
         Fetch station reports by date
         """
-        date = datetime(date.year, date.month, date.day)
+        date = dt.datetime(date.year, date.month, date.day)
         fetch = self._app.mdb.history[report_type].find_one(
             {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
         )
         data = await mongo_handler(fetch)
         if not data or "raw" not in data:
             return []
+        date = date.date()
         return [
-            i[1] for i in sorted(data["raw"].items(), key=lambda x: x[0], reverse=True)
+            (i[1], date)
+            for i in sorted(data["raw"].items(), key=lambda x: x[0][0], reverse=True)
         ]
 
     async def recent(
         self, report_type: str, icao: str, date: "date", count: int
-    ) -> [str]:
+    ) -> [(str, dt.date)]:
         """
         Fetch most recent n reports from a date
         """
         data = await self.by_date(report_type, icao, date) or []
         while len(data) <= count:
-            date = date - timedelta(days=1)
+            date = date - dt.timedelta(days=1)
             new_data = await self.by_date(report_type, icao, date)
             if not new_data:
                 break
-            data += new_data
+            data += [(item, date.date()) for item in new_data]
         if len(data) > count:
             data = data[:count]
         return data
@@ -71,4 +75,10 @@ class HistoryFetch:
         else:
             data = await self.by_date(**kwargs)
         parser = PARSER[params.report_type]
-        return [asdict(parser.from_report(report).data) for report in data]
+        ret = []
+        for report, date in data:
+            if params.parse:
+                ret.append(asdict(parser.from_report(report, issued=date).data))
+            else:
+                ret.append(report)
+        return ret

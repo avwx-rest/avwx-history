@@ -1,5 +1,5 @@
-git+git://github.com/avwx-rest/avwx-api-core.git@ca3d965900ca1763cbd1f419e7b0672bea55c06e#egg=avwx_api_core
+git+git://github.com/avwx-rest/avwx-api-core.git@779cffd4826e43d12c0bf1e0fb43dca5d43c361a#egg=avwx_api_core
 
-avwx-engine==1.4.0a12
+avwx-engine~=1.4.3
 quart~=0.11
 quart-openapi>=1.5
