@@ -80,5 +80,5 @@ class HistoryFetch:
             if params.parse:
                 ret.append(asdict(parser.from_report(report, issued=date).data))
             else:
-                ret.append(report)
+                ret.append(parser.sanitize(report))
         return ret
