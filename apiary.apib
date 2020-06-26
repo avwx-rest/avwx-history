@@ -22,10 +22,10 @@ All endpoints in the AVWX History API require an Enterprise level plan to access
 
 The METAR report cache goes back to **January 1st, 2016** while other report types have not yet been backfilled. If there is interest in backfilling the historic record for TAF and other report types, let me know.
 
-Reports are added by the main API whenever a new report is requested. A backfill script is run every few days to maintain a complete record. This means that recent days may not have a complete history depending on overall popularity.
+Reports are added by the main API whenever a new report is requested. A backfill script is run every day at 1:00 UTC to maintain a complete record. Requesting data within the last two days will include recent reports merged from NOAA, so it may take a little longer to fulfill that request.
 
 
-## History [/{report_type}/{ident}{?recent,date,format}]
+## History [/{report_type}/{ident}{?recent,date,parse,format}]
 
 Returns historic reports from a specific station. Currently supports METAR and TAF.
 
@@ -39,6 +39,8 @@ Returns historic reports from a specific station. Currently supports METAR and T
     + ident: `KJFK` (string) - ICAO station ident
     + date: `2020-01-01` (optional) - ISO date yyyy-mm-dd
     + recent: 2 (number, optional) - Number of recent reports up to 48. Will return all reports on a date if not provided
+    + parse (boolean, optional) - Parse the reports or just return sanitized strings
+        + Default: true
     + format (optional) - Desired response format
         + supported: json, xml, yaml
         + Default: `json`
