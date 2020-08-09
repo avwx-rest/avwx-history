@@ -2,6 +2,8 @@
 API parameter validators
 """
 
+# pylint: disable=invalid-name
+
 # stdlib
 from datetime import date, datetime, timezone
 

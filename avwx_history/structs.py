@@ -2,6 +2,8 @@
 Parameter dataclasses
 """
 
+# pylint: disable=missing-class-docstring
+
 # stdlib
 from dataclasses import dataclass
 from datetime import date

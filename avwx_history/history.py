@@ -5,10 +5,15 @@ History fetch manager
 # stdlib
 import datetime as dt
 from dataclasses import asdict
+from typing import List, Tuple
+
+# library
+from quart import Quart
 
 # module
 import avwx
 from avwx_api_core.util.handler import mongo_handler
+from avwx_history.structs import DateParams
 
 
 PARSER = {
@@ -24,7 +29,7 @@ class NOAA(avwx.service.NOAA_ADDS):
 
     _coallate = ("metar", "taf", "aircraftreport")
 
-    def _make_url(self, station: str, lat: float, lon: float) -> (str, dict):
+    def _make_url(self, station: str, lat: float, lon: float) -> Tuple[str, dict]:
         """
         Returns a formatted URL and parameters
         """
@@ -33,7 +38,7 @@ class NOAA(avwx.service.NOAA_ADDS):
             "requestType": "retrieve",
             "format": "XML",
             "hoursBeforeNow": 28,
-            "dataSource": self.rtype + "s",
+            "dataSource": self.report_type + "s",
             "stationString": station,
         }
         return self.url, params
@@ -50,15 +55,18 @@ def find_date(report: str) -> dt.date:
     return None
 
 
+DatedReports = List[Tuple[dt.date, str]]
+
+
 class HistoryFetch:
     """
     Manages fetching historic reports
     """
 
-    def __init__(self, app: "Quart"):
+    def __init__(self, app: Quart):
         self._app = app
 
-    async def recent_from_noaa(self, report_type: str, icao: str) -> [(dt.date, str)]:
+    async def recent_from_noaa(self, report_type: str, icao: str) -> DatedReports:
         """
         Fetch recent reports from NOAA, not storage
         """
@@ -72,14 +80,12 @@ class HistoryFetch:
                 ret.append((date, report))
         return ret
 
-    async def by_date(
-        self, report_type: str, icao: str, date: "date"
-    ) -> [(dt.date, str)]:
+    async def by_date(self, report_type: str, icao: str, date: dt.date) -> DatedReports:
         """
         Fetch station reports by date
         """
         date = dt.datetime(date.year, date.month, date.day)
-        fetch = self._app.mdb.history[report_type].find_one(
+        fetch = self._app.archive.history[report_type].find_one(
             {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
         )
         data = await mongo_handler(fetch)
@@ -89,8 +95,8 @@ class HistoryFetch:
         return [(date, report) for report in data["raw"].values()]
 
     async def recent(
-        self, report_type: str, icao: str, date: "date", count: int
-    ) -> [(dt.date, str)]:
+        self, report_type: str, icao: str, date: dt.date, count: int
+    ) -> DatedReports:
         """
         Fetch most recent n reports from a date
         """
@@ -110,7 +116,7 @@ class HistoryFetch:
             data = data[:count]
         return data
 
-    async def from_params(self, params: "structs.Params") -> [dict]:
+    async def from_params(self, params: DateParams) -> List[dict]:
         """
         Fetch reports based on request params
         """

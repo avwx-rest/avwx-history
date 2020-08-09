@@ -5,12 +5,13 @@ Expand history objects into dates and save only raw report
 # stdlib
 from datetime import datetime
 from os import environ
+from typing import Dict
 
 # library
 from pymongo import MongoClient, UpdateOne
 
 
-def make_update(icao: str, date: datetime, reports: {str: dict}) -> UpdateOne:
+def make_update(icao: str, date: datetime, reports: Dict[str, dict]) -> UpdateOne:
     """
     Returns an UpdateOne operation for stripped reports on a day
     """

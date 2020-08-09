@@ -9,6 +9,7 @@ WORKDIR /home/avwx
 
 # Set the service credentials as environment variables
 ENV MONGO_URI='mongodb+srv://cache:password==@loc.test.com:12345'
+ENV MONGO_ARCHIVE_URI='mongodb://archive:password==@loc.test.com:12345'
 ENV LOG_KEY='rollbar-server-key'
 
 # Install the require Python packages
