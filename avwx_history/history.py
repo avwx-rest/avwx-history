@@ -85,7 +85,7 @@ class HistoryFetch:
         Fetch station reports by date
         """
         date = dt.datetime(date.year, date.month, date.day)
-        fetch = self._app.archive.history[report_type].find_one(
+        fetch = self._app.mdb.history[report_type].find_one(
             {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
         )
         data = await mongo_handler(fetch)

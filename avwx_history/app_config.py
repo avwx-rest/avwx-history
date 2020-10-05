@@ -6,7 +6,7 @@ AVWX app configuration and lifecycle
 from os import environ
 
 # library
-from motor.motor_asyncio import AsyncIOMotorClient
+# from motor.motor_asyncio import AsyncIOMotorClient
 
 # module
 from avwx_api_core.app import create_app
@@ -25,4 +25,4 @@ async def init_helpers():
     app.cache = CacheManager(app)
     app.token = TokenManager(app)
     app.history = HistoryFetch(app)
-    app.archive = AsyncIOMotorClient(environ.get("MONGO_ARCHIVE_URI"))
+    # app.archive = AsyncIOMotorClient(environ.get("MONGO_ARCHIVE_URI"))
