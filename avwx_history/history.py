@@ -8,11 +8,13 @@ from dataclasses import asdict
 from typing import List, Tuple
 
 # library
+import httpx
 from quart import Quart
 
 # module
 import avwx
-from avwx_api_core.util.handler import mongo_handler
+
+# from avwx_api_core.util.handler import mongo_handler
 from avwx_history.structs import DateParams
 
 
@@ -23,9 +25,7 @@ PARSER = {
 
 
 class NOAA(avwx.service.NOAA_ADDS):
-    """
-    Fetch recent reports from NOAA ADDS
-    """
+    """Fetch recent reports from NOAA ADDS"""
 
     _coallate = ("metar", "taf", "aircraftreport")
 
@@ -45,9 +45,7 @@ class NOAA(avwx.service.NOAA_ADDS):
 
 
 def find_date(report: str) -> dt.date:
-    """
-    Returns the Zulu timestamp without the trailing Z
-    """
+    """Returns the Zulu timestamp without the trailing Z"""
     for item in report.split():
         if len(item) == 7 and item.endswith("Z") and item[:6].isdigit():
             if timestamp := item[:6]:
@@ -58,10 +56,66 @@ def find_date(report: str) -> dt.date:
 DatedReports = List[Tuple[dt.date, str]]
 
 
+class Agron:
+    """Source reports from agron server"""
+
+    url = (
+        "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
+        "station={}&data=metar&"
+        "year1={}&month1={}&day1={}&"
+        "year2={}&month2={}&day2={}&"
+        "tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=null&"
+        "trace=null&direct=no&report_type=1&report_type=2"
+    )
+
+    @staticmethod
+    def find_timestamp(report: str) -> str:
+        """Returns the Zulu timestamp without the trailing Z"""
+        for item in report.split():
+            if len(item) == 7 and item.endswith("Z") and item[:6].isdigit():
+                return item[:6]
+        return None
+
+    def parse_response(self, text: str) -> DatedReports:
+        """Returns valid reports from the raw response as date tuples"""
+        lines = text.strip().split("\n")[1:]
+        data = {}
+        for line in lines:
+            line = line.split(",")
+            date_key = dt.datetime.strptime(line[1].split()[0], r"%Y-%m-%d").date()
+            report = " ".join(line[2].split())
+            # Source includes "null" lines and fake data
+            # NOTE: https://mesonet.agron.iastate.edu/onsite/news.phtml?id=1290
+            if not report or report == "null" or "MADISHF" in report:
+                continue
+            report_key = self.find_timestamp(report)
+            if not report_key:
+                continue
+            try:
+                data[date_key][report_key] = report
+            except KeyError:
+                data[date_key] = {report_key: report}
+        ret = []
+        for key, reports in data.items():
+            ret += [(key, val) for val in sorted(reports.values())]
+        return ret
+
+    async def by_date(self, icao: str, date: dt.date) -> DatedReports:
+        """Fetches and updates historical reports for an ICAO ident"""
+        end = date + dt.timedelta(days=1)
+        url = self.url.format(
+            icao, date.year, date.month, date.day, end.year, end.month, end.day,
+        )
+        try:
+            async with httpx.AsyncClient() as conn:
+                resp = await conn.get(url)
+        except:
+            return []
+        return self.parse_response(resp.text)
+
+
 class HistoryFetch:
-    """
-    Manages fetching historic reports
-    """
+    """Manages fetching historic reports"""
 
     def __init__(self, app: Quart):
         self._app = app
@@ -81,25 +135,23 @@ class HistoryFetch:
         return ret
 
     async def by_date(self, report_type: str, icao: str, date: dt.date) -> DatedReports:
-        """
-        Fetch station reports by date
-        """
-        date = dt.datetime(date.year, date.month, date.day)
-        fetch = self._app.mdb.history[report_type].find_one(
-            {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
-        )
-        data = await mongo_handler(fetch)
-        if not data or "raw" not in data:
-            return []
-        date = date.date()
-        return [(date, report) for report in data["raw"].values()]
+        """Fetch station reports by date"""
+        agron = Agron()
+        return await agron.by_date(icao, date)
+        # date = dt.datetime(date.year, date.month, date.day)
+        # fetch = self._app.mdb.history[report_type].find_one(
+        #     {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
+        # )
+        # data = await mongo_handler(fetch)
+        # if not data or "raw" not in data:
+        #     return []
+        # date = date.date()
+        # return [(date, report) for report in data["raw"].values()]
 
     async def recent(
         self, report_type: str, icao: str, date: dt.date, count: int
     ) -> DatedReports:
-        """
-        Fetch most recent n reports from a date
-        """
+        """Fetch most recent n reports from a date"""
         today = dt.datetime.now(tz=dt.timezone.utc).date()
         if today - date < dt.timedelta(days=2):
             data = await self.recent_from_noaa(report_type, icao)
@@ -117,9 +169,7 @@ class HistoryFetch:
         return data
 
     async def from_params(self, params: DateParams) -> List[dict]:
-        """
-        Fetch reports based on request params
-        """
+        """Fetch reports based on request params"""
         kwargs = {
             "report_type": params.report_type,
             "icao": params.station,
