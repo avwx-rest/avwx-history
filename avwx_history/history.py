@@ -100,11 +100,10 @@ class Agron:
             ret += [(key, val) for val in sorted(reports.values())]
         return ret
 
-    async def by_date(self, icao: str, date: dt.date) -> DatedReports:
-        """Fetches and updates historical reports for an ICAO ident"""
-        end = date + dt.timedelta(days=1)
+    async def date_range(self, icao: str, start: dt.date, end: dt.date) -> DatedReports:
+        """Return dated reports between start and not including end dates"""
         url = self.url.format(
-            icao, date.year, date.month, date.day, end.year, end.month, end.day,
+            icao, start.year, start.month, start.day, end.year, end.month, end.day,
         )
         try:
             async with httpx.AsyncClient() as conn:
@@ -113,6 +112,10 @@ class Agron:
             return []
         return self.parse_response(resp.text)
 
+    async def by_date(self, icao: str, date: dt.date) -> DatedReports:
+        """Return dated reports on a specific date"""
+        end = date + dt.timedelta(days=1)
+        return await self.date_range(icao, date, end)
 
 class HistoryFetch:
     """Manages fetching historic reports"""
