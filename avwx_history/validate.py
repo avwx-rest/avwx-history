@@ -35,8 +35,8 @@ def Date(value: str) -> date:
         return datetime.now(tz=timezone.utc).date()
     try:
         return datetime.strptime(value, r"%Y-%m-%d").date()
-    except ValueError:
-        raise Invalid(f"{value} is not a valid date with format YYYY-MM-DD")
+    except ValueError as exc:
+        raise Invalid(f"{value} is not a valid date with format YYYY-MM-DD") from exc
 
 
 def Station(value: str) -> str:
@@ -47,8 +47,8 @@ def Station(value: str) -> str:
         icao = Length(min=4, max=4)(value.upper())
         avwx.Station.from_icao(icao)
         return icao
-    except (AttributeError, avwx.exceptions.BadStation, Invalid):
-        raise Invalid(f"{value} is not a valid station ICAO")
+    except (AttributeError, avwx.exceptions.BadStation, Invalid) as exc:
+        raise Invalid(f"{value} is not a valid station ICAO") from exc
 
 
 date_params = Schema(
