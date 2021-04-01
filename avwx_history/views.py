@@ -21,9 +21,7 @@ HEADERS = ["Authorization", "Content-Type"]
 
 
 def parse_params(func):
-    """
-    Collects and parses endpoint parameters
-    """
+    """Collects and parses endpoint parameters"""
 
     @wraps(func)
     async def wrapper(self, **kwargs):
@@ -39,12 +37,11 @@ _key_repl = {"base": "altitude"}
 _key_remv = ["top"]
 
 
-@app.route("/api/<report_type>/<station>")
-class HistView(AuthView):
-    """
-    Base historic reports view
-    """
+class Base(AuthView):
+    """Base historic reports view"""
 
+    validator: validate.Schema
+    struct: structs.Params
     plan_types = ("enterprise",)
 
     def __init__(self, *args, **kwargs):
@@ -52,25 +49,28 @@ class HistView(AuthView):
         self._key_repl = _key_repl
         self._key_remv = _key_remv
 
-    @staticmethod
-    def validate_params(**kwargs):
-        """
-        Returns all validated request parameters or an error response dict
-        """
+    def validate_params(self, **kwargs):
+        """Returns all validated request parameters or an error response dict"""
         try:
             params = {**request.args, **kwargs}
-            return structs.DateParams(**validate.date_params(params))
+            return self.struct(**self.validator(params))
         except (Invalid, MultipleInvalid) as exc:
-            key = exc.path[0]
+            key = str(exc.path[0])
             return {"error": str(exc.msg), "param": key, "help": validate.HELP.get(key)}
+
+
+@app.route("/api/<report_type>/<station>")
+class Lookup(Base):
+    """Handle single-station lookups"""
+
+    validator = validate.lookup
+    struct = structs.Lookup
 
     @crossdomain(origin="*", headers=HEADERS)
     @parse_params
     @token_check
-    async def get(self, params: structs.DateParams) -> Response:
-        """
-        GET handler returning reports
-        """
+    async def get(self, params: structs.Params) -> Response:
+        """GET handler returning reports for a specific station"""
         reports = await app.history.from_params(params)
         data = {
             "meta": datetime.now(tz=timezone.utc),
@@ -79,9 +79,28 @@ class HistView(AuthView):
         return self.make_response(data)
 
 
+@app.route("/api/path/<report_type>")
+class Along(Base):
+    """Handle lookups along a flight path"""
+
+    validator = validate.along
+    struct = structs.FlightRoute
+
+    @crossdomain(origin="*", headers=HEADERS)
+    @parse_params
+    @token_check
+    async def get(self, params: structs.Params) -> Response:
+        """GET handler returning reports along a flight path"""
+        reports = await app.history.flight_route(params)
+        data = {
+            "meta": datetime.now(tz=timezone.utc),
+            "route": params.route,
+            "results": reports,
+        }
+        return self.make_response(data)
+
+
 @app.route("/")
 def home():
-    """
-    Redirect to AVWX home
-    """
+    """Redirect to AVWX home"""
     return redirect("https://avwx.rest")
