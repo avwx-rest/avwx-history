@@ -34,7 +34,7 @@ HELP = {
     "parse": "Boolean to parse reports",
     "recent": "Returns most recent reports from a date (max 48)",
     "report_type": f"Weather report type {REPORT_TYPES}",
-    "station": "ICAO station ID. Ex: KJFK",
+    "station": "ICAO & IATA station code. Ex: KJFK or LHR",
     "route": "Flight route made of ICAO, navaid, or coordinate pairs. Ex: KLEX;ATL;29.2,-81.1;KMCO",
     "distance": "Statute miles from the route center",
 }
@@ -53,9 +53,12 @@ def Date(value: str) -> date:
 def Station(value: str) -> str:
     """Validation a station ICAO"""
     try:
-        icao = Length(min=4, max=4)(value.upper())
-        avwx.Station.from_icao(icao)
-        return icao
+        code = Length(min=3, max=4)(value.upper())
+        if len(code) == 3:
+            code = avwx.Station.from_iata(code).icao
+        else:
+            avwx.Station.from_icao(code)
+        return code
     except (AttributeError, avwx.exceptions.BadStation, Invalid) as exc:
         raise Invalid(f"{value} is not a valid station ICAO") from exc
 
