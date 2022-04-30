@@ -71,10 +71,10 @@ class Agron(CallsHTTP):
             ret += [(key, val) for val in sorted(reports.values())]
         return ret
 
-    async def date_range(self, icao: str, start: dt.date, end: dt.date) -> DatedReports:
+    async def date_range(self, code: str, start: dt.date, end: dt.date) -> DatedReports:
         """Return dated reports between start and not including end dates"""
         url = self.url.format(
-            icao,
+            code,
             start.year,
             start.month,
             start.day,
@@ -85,7 +85,7 @@ class Agron(CallsHTTP):
         text = await self._call(url)
         return self.parse_response(text)
 
-    async def by_date(self, icao: str, date: dt.date) -> DatedReports:
+    async def by_date(self, code: str, date: dt.date) -> DatedReports:
         """Return dated reports on a specific date"""
         end = date + dt.timedelta(days=1)
-        return await self.date_range(icao, date, end)
+        return await self.date_range(code, date, end)

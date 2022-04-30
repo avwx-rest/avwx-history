@@ -53,12 +53,13 @@ class HistoryFetch:
     def __init__(self, app: Quart):
         self._app = app
 
-    async def recent_from_noaa(self, report_type: str, icao: str) -> DatedReports:
+    @staticmethod
+    async def recent_from_noaa(report_type: str, code: str) -> DatedReports:
         """
         Fetch recent reports from NOAA, not storage
         """
         service = NOAA(report_type)
-        reports = await service.async_fetch(icao)
+        reports = await service.async_fetch(code)
         if not reports:
             return []
         ret = []
@@ -67,13 +68,14 @@ class HistoryFetch:
                 ret.append((date, report))
         return ret
 
-    async def by_date(self, report_type: str, icao: str, date: dt.date) -> DatedReports:
+    @staticmethod
+    async def by_date(report_type: str, code: str, date: dt.date) -> DatedReports:
         """Fetch station reports by date"""
         agron = Agron()
-        return await agron.by_date(icao, date)
+        return await agron.by_date(code, date)
         # date = dt.datetime(date.year, date.month, date.day)
         # fetch = self._app.mdb.history[report_type].find_one(
-        #     {"icao": icao, "date": date}, {"_id": 0, "raw": 1}
+        #     {"code": code, "date": date}, {"_id": 0, "raw": 1}
         # )
         # data = await mongo_handler(fetch)
         # if not data or "raw" not in data:
@@ -82,17 +84,17 @@ class HistoryFetch:
         # return [(date, report) for report in data["raw"].values()]
 
     async def recent(
-        self, report_type: str, icao: str, date: dt.date, count: int
+        self, report_type: str, code: str, date: dt.date, count: int
     ) -> DatedReports:
         """Fetch most recent n reports from a date"""
         today = dt.datetime.now(tz=dt.timezone.utc).date()
         if today - date < dt.timedelta(days=2):
-            data = await self.recent_from_noaa(report_type, icao)
+            data = await self.recent_from_noaa(report_type, code)
         else:
-            data = await self.by_date(report_type, icao, date) or []
+            data = await self.by_date(report_type, code, date) or []
         while len(data) <= count:
             date = date - dt.timedelta(days=1)
-            new_data = await self.by_date(report_type, icao, date)
+            new_data = await self.by_date(report_type, code, date)
             if not new_data:
                 break
             data += new_data
@@ -107,7 +109,7 @@ class HistoryFetch:
         """Fetch reports based on request params"""
         kwargs = {
             "report_type": params.report_type,
-            "icao": getattr(params, "station", station),
+            "code": getattr(params, "station", station),
             "date": params.date,
         }
         today = dt.datetime.now(tz=dt.timezone.utc).date()

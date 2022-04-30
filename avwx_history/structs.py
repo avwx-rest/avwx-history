@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from datetime import date
 
 # module
-from avwx_api_core.structs import Coord
+from avwx.structs import Coord
 
 
 DatedReports = list[tuple[date, str]]

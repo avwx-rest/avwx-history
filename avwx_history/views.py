@@ -69,7 +69,7 @@ class Lookup(Base):
     @crossdomain(origin="*", headers=HEADERS)
     @parse_params
     @token_check
-    async def get(self, params: structs.Params) -> Response:
+    async def get(self, params: structs.Params, _) -> Response:
         """GET handler returning reports for a specific station"""
         reports = await app.history.from_params(params)
         data = {
@@ -89,7 +89,7 @@ class Along(Base):
     @crossdomain(origin="*", headers=HEADERS)
     @parse_params
     @token_check
-    async def get(self, params: structs.Params) -> Response:
+    async def get(self, params: structs.Params, _) -> Response:
         """GET handler returning reports along a flight path"""
         reports = await app.history.flight_route(params)
         data = {
