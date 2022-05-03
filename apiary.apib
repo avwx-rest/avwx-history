@@ -24,14 +24,34 @@ The METAR report cache goes back to **January 1st, 2016** while other report typ
 
 Reports are added by the main API whenever a new report is requested. A backfill script is run every day at 1:00 UTC to maintain a complete record. Requesting data within the last two days will include recent reports merged from NOAA, so it may take a little longer to fulfill that request.
 
-
-## History [/{report_type}/{ident}{?recent,date,parse,format}]
-
-Returns historic reports from a specific station. Currently supports METAR and TAF.
+The historic reports API can return recent reports, reports on a specific day, and a combination of the two. Each endpoint shares these search parameters:
 
 - Calls with `recent` but not `date` return the most recent n number of reports up to a max of 48 in one call
 - Calls with `date` but not `recent` return all reports from that date
 - Calls with both `recent` and `date` return the most recent n number of reports no more recent than the given date
+
+## Flight Path Routing
+
+This API can return results based on a given flight route. These points can be:
+
+- ICAO station idents: KJFK, EGLL, PHNL
+- Navaids like VOR and NDB: ATL, ORL, PQ
+- Lat,Lon coordinates: 30.35,-81.013
+
+The flight path combines these elements with semicolons to look like:
+
+`KLEX;ATL;30.2,-82.1;ORL;KMCO`
+
+This path starts at Blue Grass Airport in Lexington, KY, down to the Atlanta VOR, a coordinate near Jacksonville, FL, the Orlando VOR, and ends at Orlando International Airport.
+
+Unlike ICAO idents, navaid idents are not globally unique. AVWX determines the most likely coordinate pair based on the next known coordinate. If the final coordinate is still multiple choice, it will pick the two nearest ones and start backfilling. It is highly recommended to bookend each flight path with either ICAO idents or coordinate pairs, but VOR to VOR navigation will still work.
+
+
+Each routing response with include the resolved coordinates used for determining the flight path.
+
+## Station History [/{report_type}/{ident}{?recent,date,parse,format,remove,filter}]
+
+Returns historic reports from a specific station. Currently supports METAR and TAF.
 
 + Parameters
     + report_type: `metar` (string) - Weather report type
@@ -44,10 +64,14 @@ Returns historic reports from a specific station. Currently supports METAR and T
     + format (optional) - Desired response format
         + supported: json, xml, yaml
         + Default: `json`
+    + remove (string, optional) - Remove unused keys from the response
+        + Examples: `spoken,repr`, `runways`
+    + filter (string, optional) - Only include these keys in the response
+        + Examples: `sanitized`, `flight_rules,altimeter,value`
 
 ### Get Reports by Station [GET]
 
-This example shows the two most recent METAR reports for JKF International in New York City.
+This example shows the two most recent METAR reports for JKF International in New York City starting on January 1st, 2020.
 
 + Request
 
@@ -206,4 +230,81 @@ This example shows the two most recent METAR reports for JKF International in Ne
                     "wind_variable_direction": []
                 }
             ]
+        }
+
+## Flight Path History [/path/{report_type}/{?route,distance,recent,date,parse,format,remove,filter}]
+
+Returns historic reports along a flight path. See notes about routing above.
+
++ Parameters
+    + report_type: `metar` (string) - Weather report type
+        + supported: metar, taf
+    + route: `KMCO;ORL;KDAB` (string) - Flight route with ICAO, navaid, and coordinate components
+    + distance: 10 (number) - Distance in statue miles from route centerline
+    + date: `2020-01-01` (optional) - ISO date yyyy-mm-dd
+    + recent: 2 (number, optional) - Number of recent reports up to 48. Will return all reports on a date if not provided
+    + parse: false (boolean, optional) - Parse the reports or just return sanitized strings
+        + Default: true
+    + format (optional) - Desired response format
+        + supported: json, xml, yaml
+        + Default: `json`
+    + remove (string, optional) - Remove unused keys from the response
+        + Examples: `spoken,repr`, `runways`
+    + filter (string, optional) - Only include these keys in the response
+        + Examples: `sanitized`, `flight_rules,altimeter,value`
+
+### Get Reports Along Flight Path [GET]
+
+This example shows the two most recent METAR reports starting on January 1st, 2020 along a flight path from Orlando to Daytona Beach, FL.
+
++ Request
+
+    + Headers
+    
+            Authorization: Token my_secret_api_token
+
++ Response 200 (application/json)
+
+        {
+            "meta": "2021-04-01T17:30:16.105386Z",
+            "route": [
+                [
+                    28.429399490356445,
+                    -81.30899810791016
+                ],
+                [
+                    28.542699813842773,
+                    -81.33499908447266
+                ],
+                [
+                    29.179899,
+                    -81.058098
+                ]
+            ],
+            "results": {
+                "KORL": [
+                    "KORL 010153Z 00000KT 10SM 16/07 A3009 RMK AO2 SLP192 T01560072",
+                    "KORL 010053Z 00000KT 10SM 16/07 A3007 RMK AO2 SLP186 T01560067"
+                ],
+                "KEVB": [
+                    "KEVB 010150Z 00000KT 10SM 12/10 A3009",
+                    "KEVB 010050Z 00000KT 10SM 12/10 A3008"
+                ],
+                "KSFB": [
+                    "KSFB 010153Z 25004KT 10SM 12/08 A3008 RMK AO2 SLP185 T01220083",
+                    "KSFB 010053Z 25003KT 10SM 14/07 A3007 RMK AO2 SLP181 T01440072"
+                ],
+                "KMCO": [
+                    "KMCO 010153Z 24004KT 10SM SCT130 BKN190 14/09 A3009 RMK AO2 SLP189 T01440089",
+                    "KMCO 010053Z 24003KT 10SM SCT190 16/07 A3007 RMK AO2 SLP182 T01610072"
+                ],
+                "KDAB": [
+                    "KDAB 010153Z 00000KT 10SM 12/10 A3008 RMK AO2 SLP184 T01220100",
+                    "KDAB 010053Z 00000KT 10SM 12/09 A3007 RMK AO2 SLP180 T01220094"
+                ],
+                "KOMN": [
+                    "KOMN 011250Z 00000KT 10SM 08/07 A3012",
+                    "KOMN 011150Z 29003KT 10SM 08/07 A3009 RMK FIRST"
+                ]
+            }
         }
