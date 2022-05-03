@@ -76,7 +76,7 @@ class Lookup(Base):
             "meta": datetime.now(tz=timezone.utc),
             "results": reports,
         }
-        return self.make_response(data)
+        return self.make_response(data, params)
 
 
 @app.route("/api/path/<report_type>")
@@ -97,7 +97,7 @@ class Along(Base):
             "route": params.route,
             "results": reports,
         }
-        return self.make_response(data)
+        return self.make_response(data, params)
 
 
 @app.route("/")

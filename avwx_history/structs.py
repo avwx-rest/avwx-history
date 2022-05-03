@@ -10,14 +10,10 @@ from datetime import date
 
 # module
 from avwx.structs import Coord
+from avwx_api_core.structs import Params
 
 
 DatedReports = list[tuple[date, str]]
-
-
-@dataclass
-class Params:
-    format: str
 
 
 @dataclass

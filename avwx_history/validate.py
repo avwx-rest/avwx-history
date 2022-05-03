@@ -21,14 +21,11 @@ from voluptuous import (
 )
 
 # module
-import avwx
-from avwx_api_core.validate import FlightRoute
+from avwx_api_core.validate import required, station_for, FlightRoute, HELP_TEXT
 
 REPORT_TYPES = ("metar", "taf")
-FORMATS = ("json", "xml", "yaml")
 
-HELP = {
-    "format": f"Accepted response formats {FORMATS}",
+HELP = HELP_TEXT | {
     "date": "Date string formatted as YYYY-MM-DD",
     "parse": "Boolean to parse reports",
     "recent": "Returns most recent reports from a date (max 48)",
@@ -37,8 +34,6 @@ HELP = {
     "route": "Flight route made of ICAO, navaid, IATA, GPS code, or coordinate pairs. Ex: KLEX;ATL;29.2,-81.1;KMCO",
     "distance": "Statute miles from the route center",
 }
-
-BLOCKED_COUNTRIES = {"RU": "Russia", "BY": "Belarus"}
 
 
 def Date(value: str) -> date:
@@ -51,30 +46,20 @@ def Date(value: str) -> date:
         raise Invalid(f"{value} is not a valid date with format YYYY-MM-DD") from exc
 
 
-def Station(value: str) -> str:
-    """Validation a station code"""
-    try:
-        station = avwx.Station.from_code(value)
-        if station.country in BLOCKED_COUNTRIES:
-            blocked = ", ".join(BLOCKED_COUNTRIES.values())
-            raise Invalid(
-                f"AVWX is currently blocking requests for airports in: {blocked}"
-            )
-        return station.lookup_code
-    except (AttributeError, avwx.exceptions.BadStation, Invalid) as exc:
-        raise Invalid(f"{value} is not a valid station code") from exc
+def StationCode(value: str) -> str:
+    """Validate a station code"""
+    return station_for(value).lookup_code
 
 
 # pylint: disable=no-value-for-parameter
 
-_required = {Required("format", default="json"): In(FORMATS)}
 _dated = {
     Required("date", default=""): Date,
     Required("parse", default=True): Boolean(),
     Required("recent", default=0): All(Coerce(int), Range(min=0, max=48)),
     Required("report_type"): In(REPORT_TYPES),
 }
-_lookup = {Required("station"): Station}
+_lookup = {Required("station"): StationCode}
 _flight_path = {
     Required("distance"): All(Coerce(float), Range(min=0, max=100)),
     Required("route"): FlightRoute,
@@ -85,5 +70,5 @@ def _schema(schema: dict) -> Schema:
     return Schema(schema, extra=REMOVE_EXTRA)
 
 
-lookup = _schema(_required | _dated | _lookup)
-along = _schema(_required | _dated | _flight_path)
+lookup = _schema(required | _dated | _lookup)
+along = _schema(required | _dated | _flight_path)
