@@ -101,6 +101,12 @@ class Along(Base):
 
 
 @app.route("/")
-def home():
+def home() -> Response:
     """Redirect to AVWX home"""
     return redirect("https://avwx.rest")
+
+
+@app.route("/ping")
+def ping() -> Response:
+    """Send empty 200 ping response"""
+    return Response(None, 200)
