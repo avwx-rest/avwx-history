@@ -5,4 +5,4 @@ httpx~=0.25
 hypercorn>=0.14
 rollbar>=0.16
 voluptuous~=0.13
-werkzeug==2.1.2
+werkzeug==3.0.1
