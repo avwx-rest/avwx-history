@@ -5,26 +5,20 @@ Historic report services
 import datetime as dt
 
 # module
-from avwx.service.scrape import CallsHTTP, NOAA_ADDS
+from avwx.service.scrape import CallsHTTP, NOAA_ScrapeList
 from avwx_history.structs import DatedReports
 
 
-class NOAA(NOAA_ADDS):
-    """Fetch recent reports from NOAA ADDS"""
+class NOAA(NOAA_ScrapeList):
+    """Fetch recent reports from NOAA"""
 
-    _coallate = ("metar", "taf", "aircraftreport")
+    _valid_types = ("metar", "taf", "pirep")
 
-    def _make_url(self, station: str, lat: float, lon: float) -> tuple[str, dict]:
+    def _make_url(self, station: str, **kwargs: int | str) -> tuple[str, dict]:
         """Returns a formatted URL and parameters"""
-        # Base request params
-        params = {
-            "requestType": "retrieve",
-            "format": "XML",
-            "hoursBeforeNow": 28,
-            "dataSource": self.report_type + "s",
-            "stationString": station,
-        }
-        return self.url, params
+        hours = 28
+        params = {"ids": station, "format": "raw", "hours": hours, **kwargs}
+        return self._url.format(self.report_type), params
 
 
 class Agron(CallsHTTP):
