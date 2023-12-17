@@ -46,8 +46,8 @@ class Base(AuthView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._key_repl = _key_repl
-        self._key_remv = _key_remv
+        self.key_repl = _key_repl
+        self.key_remv = _key_remv
 
     def validate_params(self, **kwargs):
         """Returns all validated request parameters or an error response dict"""
