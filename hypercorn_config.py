@@ -1,6 +1,4 @@
-"""
-Hypercorn application server settings
-"""
+"""Hypercorn application server settings."""
 
 bind = "0.0.0.0:8000"
 

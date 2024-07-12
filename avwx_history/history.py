@@ -1,6 +1,4 @@
-"""
-History fetch manager
-"""
+"""History fetch manager."""
 
 # stdlib
 import asyncio as aio
@@ -18,7 +16,7 @@ from avwx_api_core.services import FlightRouter
 
 # from avwx_api_core.util.handler import mongo_handler
 from avwx_history.service import Agron, NOAA
-from avwx_history.structs import DatedReports, FlightRoute, Params
+from avwx_history.structs import DatedReports, FlightRoute, Lookup
 
 
 PARSER = {
@@ -28,7 +26,7 @@ PARSER = {
 
 
 def find_date(report: str) -> Optional[dt.date]:
-    """Returns the Zulu timestamp without the trailing Z"""
+    """Return the Zulu timestamp without the trailing Z."""
     for item in report.split():
         if len(item) == 7 and item.endswith("Z") and item[:6].isdigit():
             if timestamp := item[:6]:
@@ -37,7 +35,7 @@ def find_date(report: str) -> Optional[dt.date]:
 
 
 async def gather_with_concurrency(concurrent: int, *tasks: Coroutine) -> list[Any]:
-    """Runs max number of coroutines at one time. Replaces aio.gather"""
+    """Run max number of coroutines at one time. Replaces aio.gather."""
     semaphore = aio.Semaphore(concurrent)
 
     async def sem_task(task):
@@ -48,16 +46,14 @@ async def gather_with_concurrency(concurrent: int, *tasks: Coroutine) -> list[An
 
 
 class HistoryFetch:
-    """Manages fetching historic reports"""
+    """Manage fetching historic reports."""
 
     def __init__(self, app: Quart):
         self._app = app
 
     @staticmethod
     async def recent_from_noaa(report_type: str, code: str) -> DatedReports:
-        """
-        Fetch recent reports from NOAA, not storage
-        """
+        """Fetch recent reports from NOAA, not storage."""
         service = NOAA(report_type)
         reports = await service.async_fetch(code)
         if not reports:
@@ -70,7 +66,7 @@ class HistoryFetch:
 
     @staticmethod
     async def by_date(report_type: str, code: str, date: dt.date) -> DatedReports:
-        """Fetch station reports by date"""
+        """Fetch station reports by date."""
         agron = Agron()
         return await agron.by_date(code, date)
         # date = dt.datetime(date.year, date.month, date.day)
@@ -86,7 +82,7 @@ class HistoryFetch:
     async def recent(
         self, report_type: str, code: str, date: dt.date, count: int
     ) -> DatedReports:
-        """Fetch most recent n reports from a date"""
+        """Fetch most recent n reports from a date."""
         today = dt.datetime.now(tz=dt.timezone.utc).date()
         if today - date < dt.timedelta(days=2):
             data = await self.recent_from_noaa(report_type, code)
@@ -104,22 +100,30 @@ class HistoryFetch:
         return data
 
     async def from_params(
-        self, params: Params, station: Optional[str] = None
+        self, params: Lookup, station: Optional[str] = None
     ) -> list[dict]:
-        """Fetch reports based on request params"""
-        kwargs = {
-            "report_type": params.report_type,
-            "code": getattr(params, "station", station),
-            "date": params.date,
-        }
+        """Fetch reports based on request params."""
+        code = getattr(params, "station", station)
+        if not code:
+            msg = "No station code found"
+            raise ValueError(msg)
         today = dt.datetime.now(tz=dt.timezone.utc).date()
         if params.recent:
-            data = await self.recent(**kwargs, count=params.recent)
+            data = await self.recent(
+                report_type=params.report_type,
+                code=code,
+                date=params.date,
+                count=params.recent,
+            )
         elif params.date == today:
             data = await self.recent_from_noaa(params.report_type, params.station)
             data = list(set(i for i in data if i[0] == today))
         else:
-            data = await self.by_date(**kwargs)
+            data = await self.by_date(
+                report_type=params.report_type,
+                code=code,
+                date=params.date,
+            )
         data.sort(reverse=True)
         parser = PARSER[params.report_type]
         ret = []
@@ -137,10 +141,11 @@ class HistoryFetch:
         for item in report.split():
             with suppress(avwx.station.valid_station(item)):
                 return item
+        return ""
 
     async def flight_route(self, params: FlightRoute) -> dict[str, list]:
-        """Fetch reports along a flight path"""
+        """Fetch reports along a flight path."""
         stations = await FlightRouter().fetch("station", params.distance, params.route)
         tasks = [self.from_params(params, s) for s in stations]
-        reports = await gather_with_concurrency(20, *tasks)
+        reports: list[list[dict]] = await gather_with_concurrency(20, *tasks)
         return {self._find_station(r[0]): r for r in reports if r}

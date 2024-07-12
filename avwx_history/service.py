@@ -1,6 +1,5 @@
-"""
-Historic report services
-"""
+"""Historic report services."""
+
 # stdlib
 import datetime as dt
 
@@ -10,19 +9,19 @@ from avwx_history.structs import DatedReports
 
 
 class NOAA(NOAA_ScrapeList):
-    """Fetch recent reports from NOAA"""
+    """Fetch recent reports from NOAA."""
 
     _valid_types = ("metar", "taf", "pirep")
 
     def _make_url(self, station: str, **kwargs: int | str) -> tuple[str, dict]:
-        """Returns a formatted URL and parameters"""
+        """Return a formatted URL and parameters."""
         hours = 28
         params = {"ids": station, "format": "raw", "hours": hours, **kwargs}
         return self._url.format(self.report_type), params
 
 
 class Agron(CallsHTTP):
-    """Source reports from agron server"""
+    """Source reports from agron server."""
 
     url = (
         "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
@@ -34,21 +33,21 @@ class Agron(CallsHTTP):
     )
 
     @staticmethod
-    def find_timestamp(report: str) -> str:
-        """Returns the Zulu timestamp without the trailing Z"""
+    def find_timestamp(report: str) -> str | None:
+        """Return the Zulu timestamp without the trailing Z."""
         for item in report.split():
             if len(item) == 7 and item.endswith("Z") and item[:6].isdigit():
                 return item[:6]
         return None
 
     def parse_response(self, text: str) -> DatedReports:
-        """Returns valid reports from the raw response as date tuples"""
+        """Return valid reports from the raw response as date tuples."""
         lines = text.strip().split("\n")[1:]
-        data = {}
+        data: dict[dt.date, dict[str, str]] = {}
         for line in lines:
-            line = line.split(",")
-            date_key = dt.datetime.strptime(line[1].split()[0], r"%Y-%m-%d").date()
-            report = " ".join(line[2].split())
+            items = line.split(",")
+            date_key = dt.datetime.strptime(items[1].split()[0], r"%Y-%m-%d").date()
+            report = " ".join(items[2].split())
             # Source includes "null" lines and fake data
             # NOTE: https://mesonet.agron.iastate.edu/onsite/news.phtml?id=1290
             if not report or report == "null" or "MADISHF" in report:
@@ -66,7 +65,7 @@ class Agron(CallsHTTP):
         return ret
 
     async def date_range(self, code: str, start: dt.date, end: dt.date) -> DatedReports:
-        """Return dated reports between start and not including end dates"""
+        """Return dated reports between start and not including end dates."""
         url = self.url.format(
             code,
             start.year,
@@ -80,6 +79,6 @@ class Agron(CallsHTTP):
         return self.parse_response(text)
 
     async def by_date(self, code: str, date: dt.date) -> DatedReports:
-        """Return dated reports on a specific date"""
+        """Return dated reports on a specific date."""
         end = date + dt.timedelta(days=1)
         return await self.date_range(code, date, end)

@@ -1,6 +1,4 @@
-"""
-Parameter dataclasses and types
-"""
+"""Parameter dataclasses and types."""
 
 # pylint: disable=missing-class-docstring
 

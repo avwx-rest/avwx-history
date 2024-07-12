@@ -1,6 +1,4 @@
-"""
-API parameter validators
-"""
+"""API parameter validators."""
 
 # pylint: disable=invalid-name
 
@@ -37,7 +35,7 @@ HELP = HELP_TEXT | {
 
 
 def Date(value: str) -> date:
-    """Validates a given date or returns the current one"""
+    """Validate a given date or returns the current one."""
     if not value:
         return datetime.now(tz=timezone.utc).date()
     try:
@@ -47,7 +45,7 @@ def Date(value: str) -> date:
 
 
 def StationCode(value: str) -> str:
-    """Validate a station code"""
+    """Validate a station code."""
     return station_for(value).lookup_code
 
 

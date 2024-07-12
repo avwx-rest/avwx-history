@@ -1,6 +1,4 @@
-"""
-API view handlers
-"""
+"""API view handlers."""
 
 # stdlib
 from datetime import datetime, timezone
@@ -38,7 +36,7 @@ _key_remv = ["top"]
 
 
 class Base(AuthView):
-    """Base historic reports view"""
+    """Base historic reports view."""
 
     validator: validate.Schema
     struct: structs.Params
@@ -50,7 +48,7 @@ class Base(AuthView):
         self.key_remv = _key_remv
 
     def validate_params(self, **kwargs):
-        """Returns all validated request parameters or an error response dict"""
+        """Return all validated request parameters or an error response dict."""
         try:
             params = {**request.args, **kwargs}
             return self.struct(**self.validator(params))
@@ -61,7 +59,7 @@ class Base(AuthView):
 
 @app.route("/api/<report_type>/<station>")
 class Lookup(Base):
-    """Handle single-station lookups"""
+    """Handle single-station lookups."""
 
     validator = validate.lookup
     struct = structs.Lookup
@@ -70,7 +68,7 @@ class Lookup(Base):
     @parse_params
     @token_check
     async def get(self, params: structs.Params, _) -> Response:
-        """GET handler returning reports for a specific station"""
+        """GET handler returning reports for a specific station."""
         reports = await app.history.from_params(params)
         data = {
             "meta": datetime.now(tz=timezone.utc),
@@ -81,7 +79,7 @@ class Lookup(Base):
 
 @app.route("/api/path/<report_type>")
 class Along(Base):
-    """Handle lookups along a flight path"""
+    """Handle lookups along a flight path."""
 
     validator = validate.along
     struct = structs.FlightRoute
@@ -90,7 +88,7 @@ class Along(Base):
     @parse_params
     @token_check
     async def get(self, params: structs.Params, _) -> Response:
-        """GET handler returning reports along a flight path"""
+        """GET handler returning reports along a flight path."""
         reports = await app.history.flight_route(params)
         data = {
             "meta": datetime.now(tz=timezone.utc),
@@ -102,11 +100,11 @@ class Along(Base):
 
 @app.route("/")
 def home() -> Response:
-    """Redirect to AVWX home"""
+    """Redirect to AVWX home."""
     return redirect("https://avwx.rest")
 
 
 @app.route("/ping")
 def ping() -> Response:
-    """Send empty 200 ping response"""
+    """Send empty 200 ping response."""
     return Response(None, 200)

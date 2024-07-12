@@ -1,6 +1,4 @@
-"""
-AVWX app configuration and lifecycle
-"""
+"""AVWX app configuration and lifecycle."""
 
 # stdlib
 from os import environ
@@ -22,7 +20,7 @@ app = create_app(__name__, environ.get("MONGO_URI"))
 
 
 def init_rollbar():
-    """Initialize Rollbar exception logging"""
+    """Initialize Rollbar exception logging."""
     key = environ.get("LOG_KEY")
     # if not (key and app.env == "production"):
     #     return
@@ -32,7 +30,7 @@ def init_rollbar():
 
 @app.before_serving
 async def init_helpers():
-    """Init API helpers"""
+    """Init API helpers."""
     app.cache = CacheManager(app)
     app.token = TokenManager(app)
     app.history = HistoryFetch(app)

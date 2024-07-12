@@ -1,6 +1,4 @@
-"""
-AVWX Report History API
-"""
+"""AVWX Report History API."""
 
 from avwx_history.app_config import app
 from avwx_history import views
