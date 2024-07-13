@@ -23,4 +23,4 @@ COPY hypercorn_config.py .
 USER user
 
 # Run the application
-CMD ["hypercorn", "avwx_history:app", "-c", "file:hypercorn_config.py"]
+CMD ["hypercorn", "avwx_history.main:app", "-c", "file:hypercorn_config.py"]

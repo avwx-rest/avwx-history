@@ -11,7 +11,8 @@ from voluptuous import Invalid, MultipleInvalid
 
 # module
 from avwx_api_core.views import AuthView, make_token_check
-from avwx_history import app, structs, validate
+from avwx_history import structs, validate
+from avwx_history.app import app
 
 token_check = make_token_check(app)
 

@@ -4,11 +4,11 @@
 import datetime as dt
 
 # module
-from avwx.service.scrape import CallsHTTP, NOAA_ScrapeList
+from avwx.service.scrape import CallsHTTP, NoaaScrapeList
 from avwx_history.structs import DatedReports
 
 
-class NOAA(NOAA_ScrapeList):
+class NOAA(NoaaScrapeList):
     """Fetch recent reports from NOAA."""
 
     _valid_types = ("metar", "taf", "pirep")
