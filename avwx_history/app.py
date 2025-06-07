@@ -6,7 +6,7 @@ from os import environ
 # library
 import rollbar
 
-# from motor.motor_asyncio import AsyncIOMotorClient
+# from pymongo import AsyncMongoClient
 from quart import got_request_exception
 from rollbar.contrib.quart import report_exception
 
@@ -34,5 +34,5 @@ async def init_helpers():
     app.cache = CacheManager(app)
     app.token = TokenManager(app)
     app.history = HistoryFetch(app)
-    # app.archive = AsyncIOMotorClient(environ.get("MONGO_ARCHIVE_URI"))
+    # app.archive = AsyncMongoClient(environ.get("MONGO_ARCHIVE_URI"))
     init_rollbar()
