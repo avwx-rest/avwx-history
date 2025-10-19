@@ -4,19 +4,19 @@
 import datetime as dt
 
 # module
-from avwx.service.scrape import CallsHTTP, NoaaScrapeList
+from avwx.service.scrape import CallsHTTP, NoaaApiList
 from avwx_history.structs import DatedReports
 
 
-class NOAA(NoaaScrapeList):
+class NOAA(NoaaApiList):
     """Fetch recent reports from NOAA."""
 
     _valid_types = ("metar", "taf", "pirep")
 
     def _make_url(self, station: str, **kwargs: int | str) -> tuple[str, dict]:
         """Return a formatted URL and parameters."""
-        hours = 28
-        params = {"ids": station, "format": "raw", "hours": hours, **kwargs}
+        id_key = "id" if self.report_type == "pirep" else "ids"
+        params = {id_key: station, "hours": 28, **kwargs}
         return self._url.format(self.report_type), params
 
 
